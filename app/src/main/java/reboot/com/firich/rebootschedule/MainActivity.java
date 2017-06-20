@@ -10,6 +10,7 @@ import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.PowerManager;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -1295,12 +1296,19 @@ public void InitRS232TestTable()
                 UIUpdateTestTimes(TestTimes);
                 dump_trace("Test Times:=" + TestTimes);
                 //TODO: shutdown...
-                shutdown_now();
+                //shutdown_now();
+                RebootNow();
             }else{
                 dump_trace("Final Test Result :FAIL");
             }
 
         }
+    }
+
+    public void RebootNow() {
+        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        dump_trace("Now rebooting...");
+        pm.reboot(null);
     }
 
 //////////////////////End: Migrate Ethernet Test   //////////////////////////////////////////////////////////
