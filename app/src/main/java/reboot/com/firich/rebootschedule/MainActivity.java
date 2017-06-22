@@ -47,6 +47,9 @@ public class MainActivity extends Activity {
     boolean g_RS232TestResult = false; //
     boolean g_PingTestResult = false;
 
+    //from_long_time_schedule
+    boolean  g_b_from_long_time_schedule = false;
+
     // Test USB or Not..
     boolean g_TestUSB = false;
     boolean g_TestRS232 = false;
@@ -210,6 +213,7 @@ public class MainActivity extends Activity {
         InitRS232TestTable();   // Create RS232 test layout table
         InitEthernetTestTable();
 
+        /*
         Intent intent = getIntent();
         g_bFromBootCompleted = intent.getBooleanExtra("FromBootCompleted", false);
         dump_trace("onStart:bFromBootCompleted"+ g_bFromBootCompleted);
@@ -218,6 +222,7 @@ public class MainActivity extends Activity {
             //start 3min delay to test
             startUSBStorage_Test();
         }
+        */
 
 
         /*
@@ -235,7 +240,13 @@ public class MainActivity extends Activity {
         dump_trace("onStart:start");
         //setTitle(" SN:" + Build.SERIAL);
 
-
+        Intent intent = getIntent();
+        g_b_from_long_time_schedule = intent.getBooleanExtra("from_long_time_schedule", false);
+        dump_trace("onStart:g_b_from_long_time_schedule"+ g_b_from_long_time_schedule);
+        if (g_b_from_long_time_schedule)
+        {
+            startUSBStorage_Test();
+        }
 
     }
 
@@ -1297,7 +1308,13 @@ public void InitRS232TestTable()
                 dump_trace("Test Times:=" + TestTimes);
                 //TODO: shutdown...
                 //shutdown_now();
-                RebootNow();
+                //RebootNow();
+                Intent scheduleIntent= new Intent(MainActivity.this,MainActivity.class);
+                finish();
+                scheduleIntent.putExtra("from_long_time_schedule", true);
+
+                startActivity(scheduleIntent);
+                dump_trace("startActivity:Long Time Schedule test.");
             }else{
                 dump_trace("Final Test Result :FAIL");
             }

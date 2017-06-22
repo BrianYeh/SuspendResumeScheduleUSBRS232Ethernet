@@ -27,7 +27,7 @@ public class BootCompletedIntentReceiver extends BroadcastReceiver {
             Intent testIntent = new Intent(context, MainActivity.class);
             testIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             testIntent.putExtra("FromBootCompleted", true);
-            context.startActivity(testIntent);
+            //context.startActivity(testIntent);
         }
     }
 }
