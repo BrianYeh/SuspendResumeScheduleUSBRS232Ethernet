@@ -11,10 +11,12 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.PowerManager;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.TableLayout;
 import android.widget.TableRow;
@@ -46,6 +48,9 @@ public class MainActivity extends Activity {
     boolean g_USBTestResult = false;
     boolean g_RS232TestResult = false; //
     boolean g_PingTestResult = false;
+    long scheduleTime=1*60*1000;
+    boolean  g_b_from_sleep_schedule = false;
+
 
     //from_long_time_schedule
     boolean  g_b_from_long_time_schedule = false;
@@ -196,6 +201,16 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_reboot);
 
+        getWindow().addFlags( WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED |
+                WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD |
+                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON |
+                WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON );
+
+        WindowManager.LayoutParams params = getWindow().getAttributes();
+        //params.flags |= WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
+        params.screenBrightness = 1.0f;
+        getWindow().setAttributes(params);
+
         this.g_UITestResultHandler = new Handler(); //Brian:
         this.g_UITestTimesHandler = new Handler();
 
@@ -212,6 +227,15 @@ public class MainActivity extends Activity {
         InitUSBStorageTable(); // Create USB test layout table.
         InitRS232TestTable();   // Create RS232 test layout table
         InitEthernetTestTable();
+
+        Intent intent = getIntent();
+        g_b_from_sleep_schedule = intent.getBooleanExtra("from_sleep_schedule", false);
+        dump_trace("onStart:g_b_from_sleep_schedule"+ g_b_from_sleep_schedule);
+        if (g_b_from_sleep_schedule)
+        {
+            //start 3min delay to test
+            startUSBStorage_Test();
+        }
 
         /*
         Intent intent = getIntent();
@@ -240,6 +264,7 @@ public class MainActivity extends Activity {
         dump_trace("onStart:start");
         //setTitle(" SN:" + Build.SERIAL);
 
+        /*
         Intent intent = getIntent();
         g_b_from_long_time_schedule = intent.getBooleanExtra("from_long_time_schedule", false);
         dump_trace("onStart:g_b_from_long_time_schedule"+ g_b_from_long_time_schedule);
@@ -247,6 +272,7 @@ public class MainActivity extends Activity {
         {
             startUSBStorage_Test();
         }
+        */
 
     }
 
@@ -610,6 +636,8 @@ http://www.captechconsulting.com/blogs/runtime-permissions-best-practices-and-ho
             int TestTimes=0;
             TestTimes = get_TestTimes();
             UIUpdateTestTimes(TestTimes);
+
+            /*
             try {
                 //if (g_bFromBootCompleted) {
                  Thread.sleep(1 * 60 * 1000); // delay 3 min test.
@@ -620,6 +648,7 @@ http://www.captechconsulting.com/blogs/runtime-permissions-best-practices-and-ho
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
+            */
 
 
             //Intent intent = getIntent();
@@ -1309,14 +1338,19 @@ public void InitRS232TestTable()
                 //TODO: shutdown...
                 //shutdown_now();
                 //RebootNow();
+                /*
                 Intent scheduleIntent= new Intent(MainActivity.this,MainActivity.class);
                 finish();
                 scheduleIntent.putExtra("from_long_time_schedule", true);
 
                 startActivity(scheduleIntent);
                 dump_trace("startActivity:Long Time Schedule test.");
+                */
+                //Go to sleep (Suspend)
+                go_to_sleep_by_setting();
             }else{
-                dump_trace("Final Test Result :FAIL");
+                dump_trace("Test Result:FAIL, Never Sleep");
+                android.provider.Settings.System.putInt(getApplication().getContentResolver(), Settings.System.SCREEN_OFF_TIMEOUT, -1);
             }
 
         }
@@ -1329,6 +1363,69 @@ public void InitRS232TestTable()
     }
 
 //////////////////////End: Migrate Ethernet Test   //////////////////////////////////////////////////////////
+
+
+    private void go_to_sleep_by_setting()
+    {
+        dump_trace("go_to_sleep_by_setting:start");
+        android.provider.Settings.System.putInt(getApplication().getContentResolver(), Settings.System.SCREEN_OFF_TIMEOUT, 60*1000);
+        TurnOnScreenSchedule();
+    }
+
+    public void TurnOnScreenSchedule()
+    {
+        dump_trace("TurnOnScreenSchedule:Begin");
+
+        TurnOnScreenThread TurnOnScreenThreadP= new TurnOnScreenThread();
+        TurnOnScreenThreadP.start();
+        //Intent pushIntent = new Intent(getApplicationContext(), BackgroundService.class);
+        //getApplicationContext().startService(pushIntent);
+        dump_trace("TurnOnScreenSchedule:End");
+    }
+
+    private class TurnOnScreenThread extends Thread {
+
+        TurnOnScreenThread() {
+        }
+
+        public void run() {
+
+            dump_trace("TurnOnScreenThread:run:start");
+            try {
+                //if (g_bFromBootCompleted) {
+                Thread.sleep(2*scheduleTime); // delay 3 min test.
+
+
+                //Thread.sleep(3*60); // delay 3 min test.
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+
+            dump_trace("TurnOnScreenThread:run:to turn on screen by start new activity:");
+            Intent intentTimeout = new Intent(MainActivity.this,MainActivity.class);
+            finish();
+            intentTimeout.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                    | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            intentTimeout.putExtra("from_sleep_schedule", true);
+            startActivity(intentTimeout);
+            dump_trace("startActivity:from_sleep_schedule");
+
+
+
+
+             /* : long time schedule:
+                Intent scheduleIntent= new Intent(MainActivity.this,MainActivity.class);
+                finish();
+                scheduleIntent.putExtra("from_long_time_schedule", true);
+
+                startActivity(scheduleIntent);
+                dump_trace("startActivity:scheduleIntent");
+                */
+
+
+        }
+    }
 
 
 }
