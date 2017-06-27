@@ -1,6 +1,8 @@
 package reboot.com.firich.rebootschedule;
 
 import android.app.Activity;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -35,6 +37,7 @@ import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import firich.com.firichsdk.SerialPort;
@@ -1369,7 +1372,8 @@ public void InitRS232TestTable()
     {
         dump_trace("go_to_sleep_by_setting:start");
         android.provider.Settings.System.putInt(getApplication().getContentResolver(), Settings.System.SCREEN_OFF_TIMEOUT, 60*1000);
-        TurnOnScreenSchedule();
+        //TurnOnScreenSchedule();
+        scheduleTrunOnScreenAlarm();
     }
 
     public void TurnOnScreenSchedule()
@@ -1381,6 +1385,29 @@ public void InitRS232TestTable()
         //Intent pushIntent = new Intent(getApplicationContext(), BackgroundService.class);
         //getApplicationContext().startService(pushIntent);
         dump_trace("TurnOnScreenSchedule:End");
+    }
+
+    //public void scheduleAlarm(View v)
+    private static final String ALARM_RECEIVE_TURN_ON="android.intent.action.ALARM_RECEIVE_TURN_ON";
+    public void scheduleTrunOnScreenAlarm()
+    {
+        // The time at which the alarm will be scheduled. Here the alarm is scheduled for 1 day from the current time.
+        // We fetch the current time in milliseconds and add 1 day's time
+        // i.e. 24*60*60*1000 = 86,400,000 milliseconds in a day.
+        dump_trace("scheduleTrunOnScreenAlarm");
+        Long time = new GregorianCalendar().getTimeInMillis()+2*scheduleTime;
+
+        // Create an Intent and set the class that will execute when the Alarm triggers. Here we have
+        // specified AlarmReceiver in the Intent. The onReceive() method of this class will execute when the broadcast from your alarm is received.
+        Intent intentAlarm = new Intent(this, AlarmReceiver.class);
+
+        intentAlarm.putExtra("msg", ALARM_RECEIVE_TURN_ON);
+        // Get the Alarm Service.
+        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+
+        // Set the alarm for a particular time.
+        alarmManager.set(AlarmManager.RTC_WAKEUP, time, PendingIntent.getBroadcast(this, 1, intentAlarm, PendingIntent.FLAG_UPDATE_CURRENT));
+        //Toast.makeText(this, "Alarm Scheduled for Tomorrow", Toast.LENGTH_LONG).show();
     }
 
     private class TurnOnScreenThread extends Thread {
